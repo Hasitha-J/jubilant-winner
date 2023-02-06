@@ -1,4 +1,4 @@
-# user inputs ________________________________________________________________________________________________
+# user inputs __________________________________________________________________________________________________
 
 Monthly_product_folder=r"C:\Users\h.jayasekara\Desktop\WaporData\L2_NPP_M" #insert file path
 ds_code='L2_NPP_M'    #ds code for file naming should insetr refering WaPOR docs
