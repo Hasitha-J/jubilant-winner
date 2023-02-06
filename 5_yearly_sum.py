@@ -49,15 +49,25 @@ if not os.path.exists(output_folder):
 driver, NDV, xsize, ysize, GeoT, Projection = gis.GetGeoInfo(input_fhs[0])
 
 # for creating a yearly sum
-for year in year_dates:
-    
-    SumArray = np.zeros((ysize, xsize), dtype=np.float32)
+# if it is for a year summention
+for date in year_dates:
+    year_fhs=[]
+#     SumArray = np.zeros((ysize, xsize), dtype=np.float32)
     for fh in input_fhs:
-        Array = gis.OpenAsArray(fh, nan_values=True)
-        SumArray += Array
-
-    SumArray  =  correction_factor * SumArray
+        raster_id=os.path.split(fh)[-1].split('.tif')[0][-7:]
+        year=int(raster_id[0:4])
+        month=int(raster_id[5:7])
+        if (year == date.year):
+            year_fhs.append(fh)
+            
+    SumArray=np.zeros((ysize,xsize),dtype=np.float32)
+    for f in year_fhs:
+        Array=gis.OpenAsArray(f,nan_values=True)
+        SumArray+=Array
+        
+    
+    SumArray = correction_factor * SumArray
 
     # Save the result as a GeoTIFF file
-    out_fh = os.path.join(output_folder, 'WaPOR_{}_{}.tif'.format(naming_product,year.year))  
+    out_fh = os.path.join(output_folder, 'WaPOR_{}_{}.tif'.format(naming_product,date.year))  
     gis.CreateGeoTiff(out_fh, SumArray, driver, NDV, xsize, ysize, GeoT, Projection)
