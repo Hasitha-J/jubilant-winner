@@ -1,0 +1,99 @@
+const { Console } = require("console");
+const { setFips } = require("crypto");
+const { setDefaultResultOrder } = require("dns");
+const express = require("express");
+const { fstat } = require("fs");
+const app = express();
+const gdal = require("gdal");
+const path = require("path");
+const { addAbortSignal } = require("stream");
+const { scheduler } = require("timers/promises");
+
+var inputFilePath = "WaPOR_Maha_ET_2015.tif";
+const outputFilePath = "output.tif";
+
+// Open the input raster dataset
+const gdalDataset = gdal.open(inputFilePath);
+
+var x_size = parseInt(gdalDataset.rasterSize.y);
+console.log("x " + x_size);
+
+const driver = gdal.drivers.get("GTiff");
+console.log(gdalDataset.bands.get(1).dataType);
+
+// Create a new output raster dataset with the same dimensions and data type as the input dataset
+const outputDataset = gdal.open(
+     outputFilePath,
+     "w",
+     driver.description,
+     gdalDataset.rasterSize.x,
+     gdalDataset.rasterSize.y,
+     1,
+     gdalDataset.bands.get(1).dataType
+);
+
+// Get the input band and the output band
+const inputBand = gdalDataset.bands.get(1);
+const outputBand = outputDataset.bands.get(1);
+var outputPixelValue;
+// Perform the calculation on each pixel
+for (let y = 0; y < gdalDataset.rasterSize.y; y++) {
+     for (let x = 0; x < gdalDataset.rasterSize.x; x++) {
+          const inputPixelValue = inputBand.pixels.read(x, y, 1, 1)[0];
+
+          if (inputPixelValue == -9999) {
+               outputPixelValue = inputPixelValue;
+          } else {
+               outputPixelValue = inputPixelValue * 2; // Multiply each pixel by 2
+          }
+
+          // var fetchtopixel = (x, y, [outputPixelValue], 1, 1);
+          // console.log(fetchtopixel);
+          outputBand.pixels.set(x, y, outputPixelValue, null);
+     }
+}
+
+// Define the size of the pixel block to read from the input band
+const blockWidth = 512;
+const blockHeight = 512;
+
+// const srs = new gdal.SpatialReference();
+// srs.setFromEPSG(4326);
+
+outputDataset.srs = srs;
+// Save the output raster dataset
+outputDataset.flush();
+outputDataset.close();
+
+app.use(express.static("public"));
+
+app.get("/info", (req, res) => {
+     res.status(200).json({ info: imageBounds });
+});
+
+app.get("/", (req, res) => {
+     res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+app.get("/image", (req, res) => {
+     res.sendFile(path.join(__dirname, "output.tif"));
+});
+
+app.listen(3000, () => {
+     console.log("Server started on port 3000");
+});
+
+// const imageBounds = [
+//      [dataset.geoTransform[3], dataset.geoTransform[0]],
+//      [
+//           dataset.geoTransform[3] + dataset.geoTransform[5] * dataset.rasterSize.y,
+//           dataset.geoTransform[0] + dataset.geoTransform[1] * dataset.rasterSize.x,
+//      ],
+// ];
+
+console.log("number of bands: " + gdalDataset.bands.count());
+// console.log("width: " + gdalDataset.rasterSize.x);
+// console.log("height: " + gdalDataset.rasterSize.y);
+// console.log("geotransform: " + gdalDataset.geoTransform);
+// console.log("srs: " + (gdalDataset.srs ? gdalDataset.srs.toWKT() : "null"));
+// console.log(imageBounds);
