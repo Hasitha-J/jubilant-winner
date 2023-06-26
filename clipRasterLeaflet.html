@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link
+               rel="stylesheet"
+               href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
+          <style>
+               #map,
+               #overlay {
+                    bottom: 0;
+                    left: 0;
+                    position: absolute;
+                    right: 0;
+                    top: 0;
+               }
+               #map {
+                    z-index: 8;
+               }
+               #overlay {
+                    padding: 30px;
+                    z-index: 9;
+               }
+          </style>
+    <title>rasters in leaflet</title>
+</head>
+<body>
+    <div id="map" style="width: 100%; height: 100%"></div>
+     <!-- for geoTiff image -->
+     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+     <script src="https://unpkg.com/georaster"></script>
+     <script src="https://unpkg.com/proj4"></script>
+     <script src="https://unpkg.com/georaster-layer-for-leaflet"></script>
+
+       
+    <script src="sla.js"></script>
+    <script src="central.js"></script>
+    <script src="geoscript.js"></script>
+
+    <script>
+     var map = L.map('map').setView([7.877083, 80.697917], 8);
+
+     L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+     attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+     }).addTo(map);
+
+     // Add Raster Image (geo tiff)
+     
+     var url_to_geotiff_file = "L2_LKA_AETI_22.tif";
+     const geojsson = L.geoJSON(centralProvine).addTo(map);
+
+
+     fetch(url_to_geotiff_file)
+     .then(response => response.arrayBuffer())
+     .then(arrayBuffer => {
+     parseGeoraster(arrayBuffer).then(georaster => {
+          console.log("georaster:", georaster);
+
+          /*
+               GeoRasterLayer is an extension of GridLayer,
+               which means can use GridLayer options like opacity.
+               Just make sure to include the georaster option!
+               http://leafletjs.com/reference-1.2.0.html#gridlayer
+          */
+          var layer = new GeoRasterLayer({
+               georaster: georaster,
+               opacity:0.9,
+               mask: centralProvine,
+          mask_strategy: "outside",
+          });
+          layer.addTo(map);
+
+          map.fitBounds(layer.getBounds());
+
+     });
+     });
+
+
+    </script>
+</body>
+</html>
